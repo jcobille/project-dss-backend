@@ -14,7 +14,9 @@ import {
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {DbDataSource} from './datasources';
+import {UserCredentialsRepository, UserRepository} from './repositories';
 import {MySequence} from './sequence';
+import {CustomUserService} from './services/user.service';
 
 export {ApplicationConfig};
 
@@ -41,7 +43,11 @@ export class BackendApplication extends BootMixin(
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
     this.dataSource(DbDataSource, UserServiceBindings.DATASOURCE_NAME);
-
+    this.bind(UserServiceBindings.USER_SERVICE).toClass(CustomUserService);
+    this.bind(UserServiceBindings.USER_REPOSITORY).toClass(UserRepository);
+    this.bind(UserServiceBindings.USER_CREDENTIALS_REPOSITORY).toClass(
+      UserCredentialsRepository,
+    );
     this.bootOptions = {
       controllers: {
         // Customize ControllerBooter Conventions here

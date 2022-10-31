@@ -12,6 +12,7 @@ import {
 } from '@loopback/rest';
 import {Movie, Review} from '../models';
 import {MovieRepository} from '../repositories';
+import {CustomResponse} from '../services/types';
 export class MovieController {
   constructor(
     @repository(MovieRepository)
@@ -40,7 +41,7 @@ export class MovieController {
     return this.movieRepository.create(movie);
   }
 
-  @get('/movie')
+  @get('/movies')
   @response(200, {
     description: 'Array of Movie model instances',
     content: {
@@ -52,8 +53,22 @@ export class MovieController {
       },
     },
   })
-  async find(@param.filter(Movie) filter?: Filter<Movie>): Promise<Movie[]> {
-    return this.movieRepository.find(filter);
+  async find(
+    @param.filter(Movie) filter?: Filter<Movie>,
+  ): Promise<CustomResponse> {
+    try {
+      const movieList = await this.movieRepository.find(filter);
+
+      if (!movieList) throw new Error('No movies found');
+
+      return {
+        data: movieList,
+        status: true,
+        message: 'Movie list has been fetched.',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @get('/movie/{id}')
@@ -69,8 +84,21 @@ export class MovieController {
     @param.path.string('id') id: string,
     @param.filter(Movie, {exclude: 'where'})
     filter?: FilterExcludingWhere<Movie>,
-  ): Promise<Movie> {
-    return this.movieRepository.findById(id, filter);
+  ): Promise<CustomResponse> {
+    try {
+      const movieDetails = await this.movieRepository.findById(id, {
+        include: ['reviews', 'actors'],
+      });
+      if (!movieDetails) throw new Error("Can't find movie details.");
+
+      return {
+        data: movieDetails,
+        status: true,
+        message: 'Movie details found.',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @authenticate('jwt')

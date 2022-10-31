@@ -1,11 +1,34 @@
-import {Entity} from '@loopback/repository';
-export declare class UserCredentials extends Entity {
+import {Entity, model, property} from '@loopback/repository';
+
+@model()
+export class UserCredentials extends Entity {
+  @property({
+    type: 'string',
+    id: true,
+    generated: true,
+  })
   id: string;
-  password: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
   userId: string;
-  [prop: string]: any;
-  constructor(data?: Partial<UserCredentials>);
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  password: string;
+
+  constructor(data?: Partial<UserCredentials>) {
+    super(data);
+  }
 }
-export interface UserCredentialsRelations {}
-export declare type UserCredentialsWithRelations = UserCredentials &
+
+export interface UserCredentialsRelations {
+  // describe navigational properties here
+}
+
+export type UserCredentialsWithRelations = UserCredentials &
   UserCredentialsRelations;

@@ -10,7 +10,6 @@ import {securityId, UserProfile} from '@loopback/security';
 import {compare} from 'bcryptjs';
 import {User, UserWithRelations} from '../models';
 import {UserRepository} from '../repositories';
-
 /**
  * A pre-defined type for user credentials. It assumes a user logs in
  * using the email and password. You can modify it if your app has different credential fields
@@ -35,7 +34,9 @@ export class CustomUserService implements UserService<User, Credentials> {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
     }
 
-    const credentialsFound = await this.userRepository.findById(foundUser.id);
+    const credentialsFound = await this.userRepository.findCredentials(
+      foundUser.id,
+    );
     if (!credentialsFound) {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
     }

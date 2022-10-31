@@ -19,8 +19,8 @@ import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
 import {genSalt, hash} from 'bcryptjs';
 import _ from 'lodash';
 import {User} from '../models';
+import {UserRepository as UsersRepository} from '../repositories';
 import {CustomResponse} from '../services/types';
-
 @model()
 export class CreateUser extends User {
   @property({
@@ -62,6 +62,7 @@ export class UserController {
     @inject(SecurityBindings.USER, {optional: true})
     public user: UserProfile,
     @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(UsersRepository) protected usersRepository: UsersRepository,
   ) {}
 
   @post('/signup', {
@@ -158,7 +159,7 @@ export class UserController {
     loggedInUserProfile: UserProfile,
   ): Promise<CustomResponse> {
     let userId = loggedInUserProfile[securityId];
-    // let user this.userRepository.find();
-    return {data: userId, status: true, message: 'User details found'};
+    const user = await this.usersRepository.findById(userId);
+    return {data: user, status: true, message: 'User found'};
   }
 }

@@ -33,4 +33,14 @@ export class UserRepository extends DefaultCrudRepository<
       this.userCredentials.inclusionResolver,
     );
   }
+  async findCredentials(
+    userId: typeof User.prototype.id,
+  ): Promise<UserCredentials | undefined> {
+    return this.userCredentials(userId)
+      .get()
+      .catch(err => {
+        if (err.code === 'ENTITY_NOT_FOUND') return undefined;
+        throw err;
+      });
+  }
 }

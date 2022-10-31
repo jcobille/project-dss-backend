@@ -3,7 +3,6 @@ import {
   Credentials,
   MyUserService,
   TokenServiceBindings,
-  User,
   UserRepository,
   UserServiceBindings,
 } from '@loopback/authentication-jwt';
@@ -19,7 +18,8 @@ import {
 import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
 import {genSalt, hash} from 'bcryptjs';
 import _ from 'lodash';
-import {Users} from '../models';
+import {User} from '../models';
+import {CustomResponse} from '../services/types';
 
 @model()
 export class CreateUser extends User {
@@ -82,14 +82,14 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Users, {
+          schema: getModelSchemaRef(User, {
             title: 'NewUser',
           }),
         },
       },
     })
-    newUserRequest: Users,
-  ): Promise<Users> {
+    newUserRequest: User,
+  ): Promise<User> {
     const password = await hash(newUserRequest.password, await genSalt());
     const savedUser = await this.userRepository.create(
       _.omit(newUserRequest, 'password'),
@@ -121,11 +121,21 @@ export class UserController {
   })
   async signIn(
     @requestBody(RequestBody) credentials: Credentials,
-  ): Promise<{token: string}> {
-    const user = await this.userService.verifyCredentials(credentials);
-    const userProfile = this.userService.convertToUserProfile(user);
-    const token = await this.jwtService.generateToken(userProfile);
-    return {token};
+  ): Promise<CustomResponse> {
+    try {
+      const user = await this.userService.verifyCredentials(credentials);
+      const userProfile = this.userService.convertToUserProfile(user);
+      const token = await this.jwtService.generateToken(userProfile);
+      if (!user) throw new Error('Invalid user credentials');
+
+      return {
+        data: {token: token},
+        status: true,
+        message: 'User credential is valid',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @authenticate('jwt')
@@ -146,7 +156,9 @@ export class UserController {
   async whoAmI(
     @inject(SecurityBindings.USER)
     loggedInUserProfile: UserProfile,
-  ): Promise<string> {
-    return loggedInUserProfile[securityId];
+  ): Promise<CustomResponse> {
+    let userId = loggedInUserProfile[securityId];
+    // let user this.userRepository.find();
+    return {data: userId, status: true, message: 'User details found'};
   }
 }

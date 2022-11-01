@@ -21,6 +21,7 @@ import _ from 'lodash';
 import {User} from '../models';
 import {UserRepository as UsersRepository} from '../repositories';
 import {CustomResponse} from '../services/types';
+
 @model()
 export class CreateUser extends User {
   @property({
@@ -90,15 +91,31 @@ export class UserController {
       },
     })
     newUserRequest: User,
-  ): Promise<User> {
-    const password = await hash(newUserRequest.password, await genSalt());
-    const savedUser = await this.userRepository.create(
-      _.omit(newUserRequest, 'password'),
-    );
+  ): Promise<CustomResponse> {
+    const emailPattern = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
+    try {
+      if (!emailPattern.test(newUserRequest.email))
+        throw new Error('Email is invalid');
+      if (!newUserRequest.password) throw new Error('Password is empty');
 
-    await this.userRepository.userCredentials(savedUser.id).create({password});
+      const findUser = await this.userRepository.find({
+        where: {email: newUserRequest.email},
+      });
+      if (findUser.length > 0) throw new Error('Email is already registered.');
 
-    return newUserRequest;
+      const password = await hash(newUserRequest.password, await genSalt());
+      const savedUser = await this.userRepository.create(
+        _.omit(newUserRequest, 'password'),
+      );
+
+      await this.userRepository
+        .userCredentials(savedUser.id)
+        .create({password});
+
+      return {data: findUser, status: true, message: ''};
+    } catch (err) {
+      return {data: [], status: false, message: err.message};
+    }
   }
 
   @post('/signin', {
@@ -135,7 +152,7 @@ export class UserController {
         message: 'User credential is valid',
       };
     } catch (err) {
-      return {data: [], status: false, message: err};
+      return {data: [], status: false, message: err.message};
     }
   }
 

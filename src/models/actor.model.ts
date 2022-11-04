@@ -7,13 +7,31 @@ export class Actor extends Entity {
     id: true,
     generated: true,
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'string',
     required: true,
   })
-  name: string;
+  firstName: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  lastName: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  gender: string;
+
+  @property({
+    type: 'number',
+    required: true,
+  })
+  age: number;
 
   @property({
     type: 'string',

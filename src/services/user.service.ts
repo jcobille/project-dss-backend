@@ -56,7 +56,8 @@ export class CustomUserService implements UserService<User, Credentials> {
   convertToUserProfile(user: User): UserProfile {
     return {
       [securityId]: user.id.toString(),
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       id: user.id,
       email: user.email,
     };

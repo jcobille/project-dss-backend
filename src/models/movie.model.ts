@@ -30,7 +30,13 @@ export class Movie extends Entity {
   description: string;
 
   @property({
-    type: 'date',
+    type: 'string',
+    required: false,
+  })
+  cost: string;
+
+  @property({
+    type: 'string',
     required: true,
   })
   released_date: string;

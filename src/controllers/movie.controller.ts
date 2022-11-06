@@ -37,8 +37,19 @@ export class MovieController {
       },
     })
     movie: Omit<Movie, 'id'>,
-  ): Promise<Movie> {
-    return this.movieRepository.create(movie);
+  ): Promise<CustomResponse> {
+    try {
+      let newMovie = await this.movieRepository.create(movie);
+      if (!newMovie) throw new Error('Cannot create new movie');
+
+      return {
+        data: newMovie,
+        status: true,
+        message: 'Movie has been created.',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @get('/movies')
@@ -53,11 +64,11 @@ export class MovieController {
       },
     },
   })
-  async find(
-    @param.filter(Movie) filter?: Filter<Movie>,
-  ): Promise<CustomResponse> {
+  async find(): Promise<CustomResponse> {
     try {
-      const movieList = await this.movieRepository.find(filter);
+      const movieList = await this.movieRepository.find({
+        include: ['reviews', 'actors'],
+      });
 
       if (!movieList) throw new Error('No movies found');
 
@@ -69,6 +80,28 @@ export class MovieController {
     } catch (err) {
       return {data: [], status: false, message: err};
     }
+  }
+
+  @get('/movies/{name}')
+  @response(200, {
+    description: 'Array of Searched Actor model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Movie, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findMovies(
+    @param.path.string('name') name: string,
+  ): Promise<CustomResponse> {
+    const pattern = new RegExp('^' + name + '.*', 'i');
+    const foundMovies = await this.movieRepository.find({
+      where: {title: {regexp: pattern}},
+    });
+    return {data: foundMovies, status: true, message: ''};
   }
 
   @get('/movie/{id}')
@@ -115,9 +148,19 @@ export class MovieController {
         },
       },
     })
-    movie: Movie,
-  ): Promise<void> {
-    await this.movieRepository.updateById(id, movie);
+    movie: {},
+  ): Promise<CustomResponse> {
+    try {
+      // await this.movieRepository.updateById(id, movie);
+
+      return {
+        data: movie,
+        status: true,
+        message: 'Movie has been updated',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @authenticate('jwt')
@@ -125,8 +168,19 @@ export class MovieController {
   @response(204, {
     description: 'Movie DELETE success',
   })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.movieRepository.deleteById(id);
+  async deleteById(
+    @param.path.string('id') id: string,
+  ): Promise<CustomResponse> {
+    try {
+      await this.movieRepository.deleteById(id);
+      return {
+        data: [],
+        status: true,
+        message: 'Movie has been deleted',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @get('/movie/{id}/reviews', {

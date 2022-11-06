@@ -11,6 +11,7 @@ import {
 } from '@loopback/rest';
 import {Review} from '../models';
 import {ReviewRepository} from '../repositories';
+import {CustomResponse} from '../services/types';
 
 export class ReviewController {
   constructor(
@@ -35,8 +36,20 @@ export class ReviewController {
       },
     })
     review: Omit<Review, 'id'>,
-  ): Promise<Review> {
-    return this.reviewRepository.create(review);
+  ): Promise<CustomResponse> {
+    review = {...review, status: 'checking'};
+    try {
+      let newReview = await this.reviewRepository.create(review);
+      if (!newReview) throw new Error('Cannot create new review');
+
+      return {
+        data: newReview,
+        status: true,
+        message: 'Movie has been created.',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @get('/review')
@@ -86,8 +99,17 @@ export class ReviewController {
       },
     })
     review: Review,
-  ): Promise<void> {
-    await this.reviewRepository.updateById(id, review);
+  ): Promise<CustomResponse> {
+    try {
+      await this.reviewRepository.updateById(id, review);
+      return {
+        data: [],
+        status: true,
+        message: `Review has been ${review.status}`,
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @del('/review/{id}')

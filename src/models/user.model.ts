@@ -15,11 +15,18 @@ export class User extends Entity {
     type: 'string',
     required: true,
   })
-  name: string;
+  firstName: string;
 
   @property({
     type: 'string',
     required: true,
+  })
+  lastName: string;
+
+  @property({
+    type: 'string',
+    required: true,
+    format: 'email',
   })
   email: string;
 
@@ -31,9 +38,16 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  role: string;
+  role?: string;
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  isActive?: boolean;
 
   @hasMany(() => Review)
   reviews: Review[];

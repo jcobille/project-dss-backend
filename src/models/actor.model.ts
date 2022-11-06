@@ -1,4 +1,6 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, hasMany, model, property} from '@loopback/repository';
+import {MovieActor} from './movie-actor.model';
+import {Movie} from './movie.model';
 
 @model()
 export class Actor extends Entity {
@@ -37,6 +39,9 @@ export class Actor extends Entity {
     type: 'string',
   })
   image?: string;
+
+  @hasMany(() => Movie, {through: {model: () => MovieActor}})
+  movies: Movie[];
 
   constructor(data?: Partial<Actor>) {
     super(data);

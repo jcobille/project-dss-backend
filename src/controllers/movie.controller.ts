@@ -67,7 +67,7 @@ export class MovieController {
   async find(): Promise<CustomResponse> {
     try {
       const movieList = await this.movieRepository.find({
-        include: ['reviews'],
+        include: ['reviews', 'actors'],
       });
 
       if (!movieList) throw new Error('No movies found');
@@ -148,12 +148,13 @@ export class MovieController {
         },
       },
     })
-    movie: Movie,
+    movie: {},
   ): Promise<CustomResponse> {
     try {
-      await this.movieRepository.updateById(id, movie);
+      // await this.movieRepository.updateById(id, movie);
+
       return {
-        data: [],
+        data: movie,
         status: true,
         message: 'Movie has been updated',
       };

@@ -142,10 +142,11 @@ export class UserController {
     @requestBody(RequestBody) credentials: Credentials,
   ): Promise<CustomResponse> {
     try {
-      const foundUser = await this.userRepository.findOne({
-        where: {and: [{email: credentials.email}, {isActive: true}]},
-      });
+      const foundUser = (await this.userRepository.findOne({
+        where: {and: [{email: credentials.email}]},
+      })) as User;
       if (!foundUser) throw new Error('Invalid user credentials');
+      if (!foundUser.isActive) throw new Error('User is not active yet');
 
       const user = await this.userService.verifyCredentials(credentials);
       const userProfile = this.userService.convertToUserProfile(user);

@@ -2,13 +2,12 @@ import {Getter, inject} from '@loopback/core';
 import {
   DefaultCrudRepository,
   HasManyRepositoryFactory,
-  ReferencesManyAccessor,
-  repository,
-} from '@loopback/repository';
+  repository, HasManyThroughRepositoryFactory} from '@loopback/repository';
 import {DbDataSource} from '../datasources';
-import {Actor, Movie, MovieRelations, Review} from '../models';
-import {ActorRepository} from './actor.repository';
+import {Movie, MovieRelations, Review, Actor, MovieActor} from '../models';
 import {ReviewRepository} from './review.repository';
+import {MovieActorRepository} from './movie-actor.repository';
+import {ActorRepository} from './actor.repository';
 
 export class MovieRepository extends DefaultCrudRepository<
   Movie,
@@ -20,23 +19,18 @@ export class MovieRepository extends DefaultCrudRepository<
     typeof Movie.prototype.id
   >;
 
-  public readonly actors: ReferencesManyAccessor<
-    Actor,
-    typeof Movie.prototype.id
-  >;
+  public readonly actors: HasManyThroughRepositoryFactory<Actor, typeof Actor.prototype.id,
+          MovieActor,
+          typeof Movie.prototype.id
+        >;
 
   constructor(
     @inject('datasources.db') dataSource: DbDataSource,
     @repository.getter('ReviewRepository')
-    protected reviewRepositoryGetter: Getter<ReviewRepository>,
-    @repository.getter('ActorRepository')
-    protected actorRepositoryGetter: Getter<ActorRepository>,
+    protected reviewRepositoryGetter: Getter<ReviewRepository>, @repository.getter('MovieActorRepository') protected movieActorRepositoryGetter: Getter<MovieActorRepository>, @repository.getter('ActorRepository') protected actorRepositoryGetter: Getter<ActorRepository>,
   ) {
     super(Movie, dataSource);
-    this.actors = this.createReferencesManyAccessorFor(
-      'actors',
-      actorRepositoryGetter,
-    );
+    this.actors = this.createHasManyThroughRepositoryFactoryFor('actors', actorRepositoryGetter, movieActorRepositoryGetter,);
     this.registerInclusionResolver('actors', this.actors.inclusionResolver);
     this.reviews = this.createHasManyRepositoryFactoryFor(
       'reviews',

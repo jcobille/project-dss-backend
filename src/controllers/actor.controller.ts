@@ -97,7 +97,7 @@ export class ActorController {
     return {data: actors, status: true, message: ''};
   }
 
-  @get('/actor/{id}')
+  @get('/actor/details/{id}')
   @response(200, {
     description: 'Actor model instance',
     content: {
@@ -110,8 +110,21 @@ export class ActorController {
     @param.path.string('id') id: string,
     @param.filter(Actor, {exclude: 'where'})
     filter?: FilterExcludingWhere<Actor>,
-  ): Promise<Actor> {
-    return this.actorRepository.findById(id, filter);
+  ): Promise<CustomResponse> {
+    try {
+      let actor = await this.actorRepository.findById(id, filter);
+
+      if (!actor)
+        throw new Error("There's an error while fetching actor's details");
+
+      return {
+        data: actor,
+        status: true,
+        message: 'Actor details has been fetched',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 
   @authenticate('jwt')

@@ -64,11 +64,11 @@ export class MovieController {
       },
     },
   })
-  async find(
-    @param.filter(Movie) filter?: Filter<Movie>,
-  ): Promise<CustomResponse> {
+  async find(): Promise<CustomResponse> {
     try {
-      const movieList = await this.movieRepository.find(filter);
+      const movieList = await this.movieRepository.find({
+        include: ['reviews'],
+      });
 
       if (!movieList) throw new Error('No movies found');
 
@@ -80,6 +80,28 @@ export class MovieController {
     } catch (err) {
       return {data: [], status: false, message: err};
     }
+  }
+
+  @get('/movies/{name}')
+  @response(200, {
+    description: 'Array of Searched Actor model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Movie, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findMovies(
+    @param.path.string('name') name: string,
+  ): Promise<CustomResponse> {
+    const pattern = new RegExp('^' + name + '.*', 'i');
+    const foundMovies = await this.movieRepository.find({
+      where: {title: {regexp: pattern}},
+    });
+    return {data: foundMovies, status: true, message: ''};
   }
 
   @get('/movie/{id}')

@@ -28,10 +28,16 @@ export class Review extends Entity {
   description: string;
 
   @property({
-    type: 'boolean',
-    required: true,
+    type: 'string',
+    default: () => new Date(),
   })
-  status: boolean;
+  posted_date?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  status: string;
 
   @property({
     type: 'string',

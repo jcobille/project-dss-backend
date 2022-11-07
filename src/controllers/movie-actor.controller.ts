@@ -1,20 +1,6 @@
-import {
-  Count,
-  CountSchema,
-  Filter,
-  repository,
-  Where,
-} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  getWhereSchemaFor,
-  param,
-  patch,
-  post,
-  requestBody,
-} from '@loopback/rest';
+import {authenticate} from '@loopback/authentication';
+import {Filter, repository} from '@loopback/repository';
+import {get, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {Actor, Movie} from '../models';
 import {MovieActorRepository, MovieRepository} from '../repositories';
 import {CustomResponse} from '../services/types';
@@ -26,6 +12,7 @@ export class MovieActorController {
     protected movieActorRepository: MovieActorRepository,
   ) {}
 
+  // Returns all the actors from the movie
   @get('/movies/{id}/actors', {
     responses: {
       '200': {
@@ -45,10 +32,12 @@ export class MovieActorController {
     return this.movieRepository.actors(id).find(filter);
   }
 
+  // inserts all the actors based on the movie id
+  @authenticate('jwt')
   @post('/movie/{id}/actors', {
     responses: {
       '200': {
-        description: 'create a Actor model instance',
+        description: 'create an Actor model instance',
         content: {
           'application/json': {
             schema: getModelSchemaRef(Actor),
@@ -74,53 +63,22 @@ export class MovieActorController {
     actors: Actor[],
   ): Promise<CustomResponse> {
     try {
+      let movieActorsList = await this.movieRepository.actors(id).find();
+      movieActorsList.forEach(async actor => {
+        // remove all the actors on the collection
+        await this.movieRepository.actors(id).unlink(actor.id);
+      });
+
+      // adds a new list of actors to collection
       actors.forEach(actor => this.movieRepository.actors(id).link(actor.id));
 
       return {
-        data: actors,
+        data: [],
         status: true,
         message: 'Movie has been updated',
       };
     } catch (err) {
       return {data: [], status: false, message: err};
     }
-  }
-
-  @patch('/movies/{id}/actors', {
-    responses: {
-      '200': {
-        description: 'Movie.Actor PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-  async patch(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Actor, {partial: true}),
-        },
-      },
-    })
-    actor: Partial<Actor>,
-    @param.query.object('where', getWhereSchemaFor(Actor)) where?: Where<Actor>,
-  ): Promise<Count> {
-    return this.movieRepository.actors(id).patch(actor, where);
-  }
-
-  @del('/movies/{id}/actors', {
-    responses: {
-      '200': {
-        description: 'Movie.Actor DELETE success count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-  async delete(
-    @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(Actor)) where?: Where<Actor>,
-  ): Promise<Count> {
-    return this.movieRepository.actors(id).delete(where);
   }
 }

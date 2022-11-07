@@ -1,7 +1,5 @@
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {repository} from '@loopback/repository';
 import {
-  del,
-  get,
   getModelSchemaRef,
   param,
   patch,
@@ -19,6 +17,7 @@ export class ReviewController {
     public reviewRepository: ReviewRepository,
   ) {}
 
+  // creates a new review from a user
   @post('/review')
   @response(200, {
     description: 'Review model instance',
@@ -40,7 +39,7 @@ export class ReviewController {
     review = {...review, status: 'checking'};
     try {
       let newReview = await this.reviewRepository.create(review);
-      if (!newReview) throw new Error('Cannot create new review');
+      if (!newReview) throw 'Cannot create new review';
 
       return {
         data: newReview,
@@ -52,39 +51,7 @@ export class ReviewController {
     }
   }
 
-  @get('/review')
-  @response(200, {
-    description: 'Array of Review model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Review, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async find(@param.filter(Review) filter?: Filter<Review>): Promise<Review[]> {
-    return this.reviewRepository.find(filter);
-  }
-
-  @get('/review/{id}')
-  @response(200, {
-    description: 'Review model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Review, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(Review, {exclude: 'where'})
-    filter?: FilterExcludingWhere<Review>,
-  ): Promise<Review> {
-    return this.reviewRepository.findById(id, filter);
-  }
-
+  // Approves or decline a review
   @patch('/review/{id}')
   @response(204, {
     description: 'Review PATCH success',
@@ -110,13 +77,5 @@ export class ReviewController {
     } catch (err) {
       return {data: [], status: false, message: err};
     }
-  }
-
-  @del('/review/{id}')
-  @response(204, {
-    description: 'Review DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.reviewRepository.deleteById(id);
   }
 }

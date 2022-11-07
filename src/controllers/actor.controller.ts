@@ -11,15 +11,17 @@ import {
   response,
 } from '@loopback/rest';
 import {Actor} from '../models';
-import {ActorRepository} from '../repositories';
+import {ActorRepository, MovieRepository} from '../repositories';
 import {CustomResponse} from '../services/types';
 
 export class ActorController {
   constructor(
+    @repository(MovieRepository) protected movieRepository: MovieRepository,
     @repository(ActorRepository)
     public actorRepository: ActorRepository,
   ) {}
 
+  // This is for creating new actor
   @authenticate('jwt')
   @post('/actor')
   @response(200, {
@@ -40,13 +42,18 @@ export class ActorController {
     actor: Omit<Actor, 'id'>,
   ): Promise<CustomResponse> {
     try {
+      if (!actor.firstName) throw 'First name is required';
+      if (!actor.lastName) throw 'Last name is required';
+      if (!actor.gender) throw 'Gender is required';
+      if (actor.age === 0) throw 'Age is required';
+      if (!actor.image) throw 'Actor image is required';
+
       let newActor = await this.actorRepository.create(actor);
 
-      if (!newActor)
-        throw new Error("There's an error while creating a new actor");
+      if (!newActor) throw "There's an error while creating a new actor";
 
       return {
-        data: newActor,
+        data: [],
         status: true,
         message: 'New actor has been created',
       };
@@ -55,6 +62,7 @@ export class ActorController {
     }
   }
 
+  // This will return all the actors
   @get('/actor')
   @response(200, {
     description: 'Array of Actor model instances',
@@ -70,10 +78,18 @@ export class ActorController {
   async findAll(
     @param.filter(Actor) filter?: Filter<Actor>,
   ): Promise<CustomResponse> {
-    const actors = await this.actorRepository.find();
-    return {data: actors, status: true, message: ''};
+    try {
+      const actors = await this.actorRepository.find({
+        include: ['movies'],
+      });
+
+      return {data: actors, status: true, message: 'Actors has been fetched'};
+    } catch (err) {
+      return {data: [], status: false, message: 'No actors found'};
+    }
   }
 
+  // It is used to search for the actors based on the parameter given
   @get('/actor/{name}')
   @response(200, {
     description: 'Array of Searched Actor model instances',
@@ -92,11 +108,12 @@ export class ActorController {
   ): Promise<CustomResponse> {
     const pattern = new RegExp('^' + name + '.*', 'i');
     const actors = await this.actorRepository.find({
-      where: {firstName: {regexp: pattern}},
+      where: {firstName: {regexp: pattern}}, // search an actor by its firstName
     });
     return {data: actors, status: true, message: ''};
   }
 
+  // it will return all the details of the actor based on its id
   @get('/actor/details/{id}')
   @response(200, {
     description: 'Actor model instance',
@@ -114,19 +131,21 @@ export class ActorController {
     try {
       let actor = await this.actorRepository.findById(id, filter);
 
-      if (!actor)
-        throw new Error("There's an error while fetching actor's details");
-
       return {
         data: actor,
         status: true,
         message: 'Actor details has been fetched',
       };
     } catch (err) {
-      return {data: [], status: false, message: err};
+      return {
+        data: [],
+        status: false,
+        message: "Can't find the actor's details",
+      };
     }
   }
 
+  // it will update the actor's details
   @authenticate('jwt')
   @patch('/actor/{id}')
   @response(204, {
@@ -145,16 +164,18 @@ export class ActorController {
   ): Promise<CustomResponse> {
     try {
       await this.actorRepository.updateById(id, actor);
+
       return {
         data: [],
         status: true,
-        message: 'Actor has been edited',
+        message: 'Actor details has been edited',
       };
     } catch (err) {
-      return {data: [], status: false, message: err};
+      return {data: [], status: false, message: "Can't update actor details"};
     }
   }
 
+  // Deletes the actor details but checks if the actor still have movies
   @authenticate('jwt')
   @del('/actor/{id}')
   @response(204, {
@@ -164,7 +185,11 @@ export class ActorController {
     @param.path.string('id') id: string,
   ): Promise<CustomResponse> {
     try {
+      let actorMovies = await this.actorRepository.movies(id).find();
+      if (actorMovies.length > 0) throw 'Actor still have movies associated';
+
       await this.actorRepository.deleteById(id);
+
       return {
         data: [],
         status: true,

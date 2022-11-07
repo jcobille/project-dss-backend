@@ -19,6 +19,7 @@ export class MovieController {
     public movieRepository: MovieRepository,
   ) {}
 
+  // creates new movie details
   @authenticate('jwt')
   @post('/movie')
   @response(200, {
@@ -39,11 +40,18 @@ export class MovieController {
     movie: Omit<Movie, 'id'>,
   ): Promise<CustomResponse> {
     try {
+      if (!movie.title) throw 'Title is required';
+      if (!movie.description) throw 'Description is required';
+      if (!movie.cost) throw 'Budget cost is required';
+      if (!movie.released_date) throw 'Released date is required';
+      if (movie.duration === 0) throw 'Duration is required';
+      if (!movie.image) throw 'Movie image is required';
+
       let newMovie = await this.movieRepository.create(movie);
-      if (!newMovie) throw new Error('Cannot create new movie');
+      if (!newMovie) throw 'Cannot create new movie';
 
       return {
-        data: newMovie,
+        data: [],
         status: true,
         message: 'Movie has been created.',
       };
@@ -70,7 +78,7 @@ export class MovieController {
         include: ['reviews', 'actors'],
       });
 
-      if (!movieList) throw new Error('No movies found');
+      if (!movieList) throw 'No movies found';
 
       return {
         data: movieList,
@@ -82,6 +90,7 @@ export class MovieController {
     }
   }
 
+  // Search all the movies that is equal to parameter
   @get('/movies/{name}')
   @response(200, {
     description: 'Array of Searched Actor model instances',
@@ -104,6 +113,7 @@ export class MovieController {
     return {data: foundMovies, status: true, message: ''};
   }
 
+  // Returns the details, reviews and actors of the movie
   @get('/movie/{id}')
   @response(200, {
     description: 'Movie model instance',
@@ -122,7 +132,6 @@ export class MovieController {
       const movieDetails = await this.movieRepository.findById(id, {
         include: ['reviews', 'actors'],
       });
-      if (!movieDetails) throw new Error("Can't find movie details.");
 
       return {
         data: movieDetails,
@@ -130,7 +139,11 @@ export class MovieController {
         message: 'Movie details found.',
       };
     } catch (err) {
-      return {data: [], status: false, message: err};
+      return {
+        data: [],
+        status: false,
+        message: "Can't find specific movie details",
+      };
     }
   }
 
@@ -148,10 +161,17 @@ export class MovieController {
         },
       },
     })
-    movie: {},
+    movie: Movie,
   ): Promise<CustomResponse> {
     try {
-      // await this.movieRepository.updateById(id, movie);
+      if (!movie.title) throw 'Title is required';
+      if (!movie.description) throw 'Description is required';
+      if (!movie.cost) throw 'Budget cost is required';
+      if (!movie.released_date) throw 'Released date is required';
+      if (movie.duration === 0) throw 'Duration is required';
+      if (!movie.image) throw 'Movie image is required';
+
+      await this.movieRepository.updateById(id, movie);
 
       return {
         data: movie,
@@ -183,6 +203,7 @@ export class MovieController {
     }
   }
 
+  // Returns all the movie reviews based on movie id
   @get('/movie/{id}/reviews', {
     responses: {
       '200': {
@@ -198,7 +219,18 @@ export class MovieController {
   async findReviews(
     @param.path.string('id') id: string,
     @param.query.object('filter') filter?: Filter<Review>,
-  ): Promise<Review[]> {
-    return this.movieRepository.reviews(id).find(filter);
+  ): Promise<CustomResponse> {
+    try {
+      let reviews = await this.movieRepository.reviews(id).find(filter);
+      if (reviews.length === 0) throw 'No reviews found';
+
+      return {
+        data: [],
+        status: true,
+        message: 'Movie reviews has been fetched',
+      };
+    } catch (err) {
+      return {data: [], status: false, message: err};
+    }
   }
 }

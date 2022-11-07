@@ -67,6 +67,7 @@ export class UserController {
     @repository(UserRepository) protected userRepository: UserRepository,
   ) {}
 
+  // creates a user credentials
   @post('/signup', {
     responses: {
       '200': {
@@ -95,13 +96,27 @@ export class UserController {
   ): Promise<CustomResponse> {
     const emailPattern = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
     try {
+      if (!newUserRequest.firstName) throw new Error('First name is required');
+      if (!newUserRequest.lastName) throw new Error('Last name is required');
+      if (!newUserRequest.password) throw new Error('Password is required');
+      if (!newUserRequest.email) throw new Error('Email is required');
       if (!emailPattern.test(newUserRequest.email))
         throw new Error('Email is invalid');
       if (!newUserRequest.password) throw new Error('Password is empty');
 
+      const userCount = await this.userRepository.find();
+      if (userCount.length === 0) {
+        newUserRequest.role = 'Admin';
+        newUserRequest.isActive = true;
+      } else {
+        if (!newUserRequest.role) newUserRequest.role = 'User';
+        newUserRequest.isActive = false;
+      }
+
       const findUser = await this.userRepository.find({
         where: {email: newUserRequest.email},
       });
+
       if (findUser.length > 0) throw new Error('Email is already registered');
 
       const password = await hash(newUserRequest.password, await genSalt());
@@ -113,12 +128,13 @@ export class UserController {
         .userCredentials(savedUser.id)
         .create({password});
 
-      return {data: savedUser, status: true, message: ''};
+      return {data: newUserRequest, status: true, message: ''};
     } catch (err) {
       return {data: [], status: false, message: err.message};
     }
   }
 
+  // returns a token of user when the credential is valid
   @post('/signin', {
     responses: {
       '200': {
@@ -163,6 +179,7 @@ export class UserController {
     }
   }
 
+  // returns the current user details
   @authenticate('jwt')
   @get('/whoami', {
     responses: {
@@ -187,6 +204,7 @@ export class UserController {
     return {data: user, status: true, message: 'User found'};
   }
 
+  // Returns all users
   @authenticate('jwt')
   @get('/users/list', {
     responses: {
@@ -217,6 +235,7 @@ export class UserController {
     }
   }
 
+  // Patch the user details based on specified id
   @authenticate('jwt')
   @patch('/user/{id}')
   @response(204, {
@@ -245,6 +264,7 @@ export class UserController {
     }
   }
 
+  // delete user based on specified id
   @authenticate('jwt')
   @del('/user/{id}')
   @response(204, {

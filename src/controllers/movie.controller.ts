@@ -51,7 +51,7 @@ export class MovieController {
       if (!newMovie) throw 'Cannot create new movie';
 
       return {
-        data: [],
+        data: newMovie,
         status: true,
         message: 'Movie has been created.',
       };
@@ -158,18 +158,14 @@ export class MovieController {
       content: {
         'application/json': {
           schema: getModelSchemaRef(Movie, {partial: true}),
+          exclude: ['title', 'cost', 'released_date', 'duration', 'image'],
         },
       },
     })
     movie: Movie,
   ): Promise<CustomResponse> {
     try {
-      if (!movie.title) throw 'Title is required';
       if (!movie.description) throw 'Description is required';
-      if (!movie.cost) throw 'Budget cost is required';
-      if (!movie.released_date) throw 'Released date is required';
-      if (movie.duration === 0) throw 'Duration is required';
-      if (!movie.image) throw 'Movie image is required';
 
       await this.movieRepository.updateById(id, movie);
 

@@ -23,6 +23,7 @@ import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
 import {genSalt, hash} from 'bcryptjs';
 import _ from 'lodash';
 import {User} from '../models';
+import {ReviewRepository} from '../repositories';
 import {CustomResponse} from '../services/types';
 @model()
 export class CreateUser extends User {
@@ -65,6 +66,7 @@ export class UserController {
     @inject(SecurityBindings.USER, {optional: true})
     public user: UserProfile,
     @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(ReviewRepository) protected reviewRepository: ReviewRepository,
   ) {}
 
   // creates a user credentials

@@ -50,15 +50,16 @@ export class ActorController {
 
       let newActor = await this.actorRepository.create(actor);
 
-      if (!newActor) throw "There's an error while creating a new actor";
+      if (!newActor)
+        throw new Error("There's an error while creating a new actor");
 
       return {
-        data: [],
+        data: newActor,
         status: true,
         message: 'New actor has been created',
       };
     } catch (err) {
-      return {data: [], status: false, message: err};
+      return {data: [], status: false, message: err.message};
     }
   }
 
